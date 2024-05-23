@@ -5,6 +5,7 @@ namespace Gameplay.UserModule
         public static void Copy(this UserData oldData, UserData newData)
         {
             oldData.LastSpinIndex = newData.LastSpinIndex;
+            oldData.SpinData = newData.SpinData;
         }
     }
 }
