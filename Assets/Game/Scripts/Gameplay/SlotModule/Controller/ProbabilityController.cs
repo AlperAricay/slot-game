@@ -22,7 +22,7 @@ namespace Gameplay.SlotModule.Controller
                 GenerateSpinData();
         }
 
-        private void GenerateSpinData()
+        public void GenerateSpinData()
         {
             _userData.SpinData = new Combination[100];
             var probabilities = _probabilityConfig.Probabilities.ToList();

@@ -1,4 +1,5 @@
 using Gameplay.SerializationModule;
+using Gameplay.Signals;
 using Gameplay.UserModule;
 using Gameplay.Utility;
 using Zenject;
@@ -11,8 +12,16 @@ namespace Gameplay.Installers
         {
             SerializationInstaller.Install(Container);
             UserDataInstaller.Install(Container);
+            InstallSignals();
 
             Container.InstantiateComponentOnNewGameObject<ApplicationStateAnnouncer>();
+        }
+
+        private void InstallSignals()
+        {
+            SignalBusInstaller.Install(Container);
+            
+            Container.DeclareSignal<SpinCompletedSignal>().OptionalSubscriber();
         }
     }
 }
