@@ -4,8 +4,6 @@ using DG.Tweening;
 using Gameplay.Generic;
 using Gameplay.SlotModule.View;
 using Gameplay.Utility;
-using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace Gameplay.SlotModule.Model
 {
