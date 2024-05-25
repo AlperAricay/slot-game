@@ -5,6 +5,7 @@ using Gameplay.Generic;
 using Gameplay.Signals;
 using Gameplay.SlotModule.Model;
 using Gameplay.SlotModule.View;
+using Gameplay.UI;
 using Gameplay.UserModule;
 using UnityEngine;
 using Zenject;
@@ -16,46 +17,62 @@ namespace Gameplay.SlotModule.Controller
         [Inject] private UserData _userData;
         [Inject] private ProbabilityController _probabilityController;
         [Inject] private ProbabilitySet _probabilitySet;
+        [Inject] private SlotSpinButton _spinButton;
         [Inject] private SignalBus _signalBus;
 
         [SerializeField] private SlotObjectView _slotObjectViewPrefab;
 
         private SlotColumn[] _slotColumns;
+        private bool _isSpinning;
 
         public void Initialize()
         {
-            const int columnCount = 3;
-            _slotColumns = new SlotColumn[columnCount];
+            InitializeSlotObjects();
+            Subscribe();
 
-            var yPositions = new float[5];
-            for (int i = 0; i < 5; i++) yPositions[i] = GameConfig.VerticalSlotOffset * (2 - i);
-
-            var currentXPos = -GameConfig.HorizontalSlotOffset;
-            for (int i = 0; i < columnCount; i++)
+            return;
+            void InitializeSlotObjects()
             {
-                var slotObjectViews = new SlotObjectView[5];
-                var currentYPos = -GameConfig.VerticalSlotOffset * 2;
-                for (int j = 0; j < 5; j++)
-                {
-                    var slotObjectView = Instantiate(_slotObjectViewPrefab, transform);
-                    slotObjectView.Initialize(yPositions, 4 - j);
-                    slotObjectView.transform.position = new Vector3(currentXPos, currentYPos);
-                    slotObjectViews[j] = slotObjectView;
-                    currentYPos += GameConfig.VerticalSlotOffset;
-                }
+                const int columnCount = 3;
+                _slotColumns = new SlotColumn[columnCount];
 
-                _slotColumns[i] = new SlotColumn(slotObjectViews, i, _probabilitySet);
-                currentXPos += GameConfig.HorizontalSlotOffset;
+                var yPositions = new float[5];
+                for (int i = 0; i < 5; i++) yPositions[i] = GameConfig.VerticalSlotOffset * (2 - i);
+
+                var currentXPos = -GameConfig.HorizontalSlotOffset;
+                for (int i = 0; i < columnCount; i++)
+                {
+                    var slotObjectViews = new SlotObjectView[5];
+                    var currentYPos = -GameConfig.VerticalSlotOffset * 2;
+                    for (int j = 0; j < 5; j++)
+                    {
+                        var slotObjectView = Instantiate(_slotObjectViewPrefab, transform);
+                        slotObjectView.Initialize(yPositions, 4 - j);
+                        slotObjectView.transform.position = new Vector3(currentXPos, currentYPos);
+                        slotObjectViews[j] = slotObjectView;
+                        currentYPos += GameConfig.VerticalSlotOffset;
+                    }
+
+                    _slotColumns[i] = new SlotColumn(slotObjectViews, i, _probabilitySet);
+                    currentXPos += GameConfig.HorizontalSlotOffset;
+                }
             }
         }
 
-        private void Update()
+        public void Dispose() => Unsubscribe();
+
+        private void Subscribe() => _spinButton.onClick.AddListener(OnSpinButtonClicked);
+        private void Unsubscribe() => _spinButton.onClick.RemoveListener(OnSpinButtonClicked);
+
+        private void OnSpinButtonClicked()
         {
-            if (Input.GetKeyDown(KeyCode.Space)) Spin(GameConfig.DesiredSpinDuration).Forget();
+            if (_isSpinning) return;
+            Spin(GameConfig.DesiredSpinDuration).Forget();
         }
 
         private async UniTaskVoid Spin(float spinDuration)
         {
+            _isSpinning = true;
             ValidateSpinData();
 
             var resultingCombination = _userData.SpinData[_userData.LastSpinIndex];
@@ -70,6 +87,7 @@ namespace Gameplay.SlotModule.Controller
             await UniTask.WhenAll(tasks);
             _userData.LastSpinIndex++;
             _signalBus.Fire(new SpinCompletedSignal(resultingCombination));
+            _isSpinning = false;
         }
 
         private void ValidateSpinData()

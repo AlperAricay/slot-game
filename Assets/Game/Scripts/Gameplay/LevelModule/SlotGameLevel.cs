@@ -1,3 +1,4 @@
+using System;
 using Gameplay.SlotModule.Controller;
 using UnityEngine;
 
@@ -7,9 +8,8 @@ namespace Gameplay.LevelModule
     {
         [SerializeField] private SlotMachineController _slotMachineController;
         
-        private void Awake()
-        {
-            _slotMachineController.Initialize();
-        }
+        private void Awake() => _slotMachineController.Initialize();
+
+        private void OnDestroy() => _slotMachineController.Dispose();
     }
 }
