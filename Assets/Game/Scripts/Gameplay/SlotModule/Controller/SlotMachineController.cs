@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Gameplay.Generic;
+using Gameplay.Signals;
 using Gameplay.SlotModule.Model;
 using Gameplay.SlotModule.View;
 using Gameplay.UserModule;
@@ -15,6 +16,7 @@ namespace Gameplay.SlotModule.Controller
         [Inject] private UserData _userData;
         [Inject] private ProbabilityController _probabilityController;
         [Inject] private ProbabilitySet _probabilitySet;
+        [Inject] private SignalBus _signalBus;
 
         [SerializeField] private SlotObjectView _slotObjectViewPrefab;
 
@@ -56,17 +58,18 @@ namespace Gameplay.SlotModule.Controller
         {
             ValidateSpinData();
 
+            var resultingCombination = _userData.SpinData[_userData.LastSpinIndex];
             var tasks = new List<UniTask>();
             for (var i = 0; i < _slotColumns.Length; i++)
             {
-                var task = _slotColumns[i].Spin(spinDuration, _userData.SpinData[_userData.LastSpinIndex]);
+                var task = _slotColumns[i].Spin(spinDuration, resultingCombination);
                 tasks.Add(task);
                 await UniTask.Delay(TimeSpan.FromSeconds(GameConfig.DelayBetweenColumnSpins));
             }
 
             await UniTask.WhenAll(tasks);
             _userData.LastSpinIndex++;
-            
+            _signalBus.Fire(new SpinCompletedSignal(resultingCombination));
         }
 
         private void ValidateSpinData()

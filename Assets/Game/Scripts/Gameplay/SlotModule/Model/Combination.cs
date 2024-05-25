@@ -8,7 +8,7 @@ namespace Gameplay.SlotModule.Model
     {
         public SlotObject.SlotObjectType[] SlotObjects;
         
-        public bool DoesContainSameTypes()
+        public readonly bool DoesContainSameTypes()
         {
             var objectTypes = SlotObjects;
             return SlotObjects.All(o => o == objectTypes.First());
