@@ -31,19 +31,8 @@ namespace Gameplay.SlotModule.Model
                 slotObjectView.SetData(_probabilitySet.SlotObjects.GetRandomElement());
         }
 
-        public async UniTask Spin(float spinDuration, Combination spinResult)
+        public async UniTask Spin(float spinDuration, Combination spinResult, StopType stopType)
         {
-            var stopType = StopType.Fast;
-            if (_columnIndex == 2)
-            {
-                if (spinResult.DoesContainSameTypes())
-                {
-                    var randomBool = Random.Range(0, 2) == 0;
-                    stopType = randomBool ? StopType.Normal : StopType.Slow;
-                    spinDuration += GameConfig.GetStopDuration(stopType);
-                }
-            }
-
             ToggleBlurs(true);
             
             var timeToStartStopping = spinDuration - GameConfig.GetStopDuration(stopType);

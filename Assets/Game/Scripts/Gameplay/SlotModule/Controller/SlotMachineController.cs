@@ -9,6 +9,7 @@ using Gameplay.UI;
 using Gameplay.UserModule;
 using UnityEngine;
 using Zenject;
+using Random = UnityEngine.Random;
 
 namespace Gameplay.SlotModule.Controller
 {
@@ -31,6 +32,7 @@ namespace Gameplay.SlotModule.Controller
             Subscribe();
 
             return;
+
             void InitializeSlotObjects()
             {
                 const int columnCount = 3;
@@ -75,11 +77,31 @@ namespace Gameplay.SlotModule.Controller
             _isSpinning = true;
             ValidateSpinData();
 
+            spinDuration -= (_slotColumns.Length - 1) * GameConfig.DelayBetweenColumnSpins;
+
             var resultingCombination = _userData.SpinData[_userData.LastSpinIndex];
+            var lastSpinType = GetLastSpinType();
+
+            var lastSpinDuration = GameConfig.GetStopDuration(lastSpinType);
+            var remainingSpinDuration = spinDuration - lastSpinDuration;
+            
             var tasks = new List<UniTask>();
             for (var i = 0; i < _slotColumns.Length; i++)
             {
-                var task = _slotColumns[i].Spin(spinDuration, resultingCombination);
+                float targetSpinDuration;
+                SlotColumn.StopType stopType;
+                if (i == _slotColumns.Length - 1)
+                {
+                    targetSpinDuration = spinDuration;
+                    stopType = lastSpinType;
+                }
+                else
+                {
+                    targetSpinDuration = remainingSpinDuration;
+                    stopType = SlotColumn.StopType.Fast;
+                }
+                
+                var task = _slotColumns[i].Spin(targetSpinDuration, resultingCombination, stopType);
                 tasks.Add(task);
                 await UniTask.Delay(TimeSpan.FromSeconds(GameConfig.DelayBetweenColumnSpins));
             }
@@ -88,12 +110,26 @@ namespace Gameplay.SlotModule.Controller
             _userData.LastSpinIndex++;
             _signalBus.Fire(new SpinCompletedSignal(resultingCombination));
             _isSpinning = false;
+
+            return;
+
+            SlotColumn.StopType GetLastSpinType()
+            {
+                var stopType = SlotColumn.StopType.Fast;
+                if (resultingCombination.DoesContainSameTypes())
+                {
+                    var randomBool = Random.Range(0, 2) == 0;
+                    stopType = randomBool ? SlotColumn.StopType.Normal : SlotColumn.StopType.Slow;
+                }
+
+                return stopType;
+            }
         }
 
         private void ValidateSpinData()
         {
             if (_userData.LastSpinIndex <= 99) return;
-            
+
             _probabilityController.GenerateSpinData();
             _userData.LastSpinIndex = 0;
         }
