@@ -12,7 +12,7 @@ namespace Gameplay.Generic
         public const float NormalStopDuration = 1f;
         public const float SlowStopDuration = 2.25f;
         public const float DelayBetweenColumnSpins = .5f;
-        public const float DesiredSpinDuration = 3f;
+        public const float DesiredSpinDuration = 5f;
 
         public static float GetStopDuration(SlotColumn.StopType stopType)
         {
