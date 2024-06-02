@@ -11,15 +11,12 @@ using UnityEngine;
 using Zenject;
 using Random = UnityEngine.Random;
 
-// ReSharper disable PossibleLossOfFraction
-
 namespace Gameplay.SlotModule.Controller
 {
     public class SlotMachineController : MonoBehaviour
     {
         [Inject] private UserData _userData;
         [Inject] private ProbabilityController _probabilityController;
-        [Inject] private ProbabilityConfig _probabilityConfig;
         [Inject] private ProbabilitySet _probabilitySet;
         [Inject] private SlotSpinButton _spinButton;
         [Inject] private SignalBus _signalBus;
@@ -31,7 +28,6 @@ namespace Gameplay.SlotModule.Controller
 
         public void Initialize()
         {
-            ValidateSpinData();
             InitializeSlotObjects();
             Subscribe();
 
@@ -39,23 +35,21 @@ namespace Gameplay.SlotModule.Controller
 
             void InitializeSlotObjects()
             {
-                var columnCount = _userData.SpinData[_userData.LastSpinIndex].SlotObjects.Length;
+                const int columnCount = 3;
                 _slotColumns = new SlotColumn[columnCount];
 
-                const int slotObjectPerColumn = 7;
-                var yPositions = new float[slotObjectPerColumn];
-                for (int i = 0; i < slotObjectPerColumn; i++)
-                    yPositions[i] = GameConfig.VerticalSlotOffset * (slotObjectPerColumn / 2 - i);
+                var yPositions = new float[5];
+                for (int i = 0; i < 5; i++) yPositions[i] = GameConfig.VerticalSlotOffset * (2 - i);
 
-                var currentXPos = -GameConfig.HorizontalSlotOffset * (columnCount / 2);
+                var currentXPos = -GameConfig.HorizontalSlotOffset;
                 for (int i = 0; i < columnCount; i++)
                 {
-                    var slotObjectViews = new SlotObjectView[slotObjectPerColumn];
-                    var currentYPos = -GameConfig.VerticalSlotOffset * (slotObjectPerColumn / 2);
-                    for (int j = 0; j < slotObjectPerColumn; j++)
+                    var slotObjectViews = new SlotObjectView[5];
+                    var currentYPos = -GameConfig.VerticalSlotOffset * 2;
+                    for (int j = 0; j < 5; j++)
                     {
                         var slotObjectView = Instantiate(_slotObjectViewPrefab, transform);
-                        slotObjectView.Initialize(yPositions, slotObjectPerColumn - 1 - j);
+                        slotObjectView.Initialize(yPositions, 4 - j);
                         slotObjectView.transform.position = new Vector3(currentXPos, currentYPos);
                         slotObjectViews[j] = slotObjectView;
                         currentYPos += GameConfig.VerticalSlotOffset;
@@ -90,7 +84,7 @@ namespace Gameplay.SlotModule.Controller
 
             var lastSpinDuration = GameConfig.GetStopDuration(lastSpinType);
             var remainingSpinDuration = spinDuration - lastSpinDuration;
-
+            
             var tasks = new List<UniTask>();
             for (var i = 0; i < _slotColumns.Length; i++)
             {
@@ -106,7 +100,7 @@ namespace Gameplay.SlotModule.Controller
                     targetSpinDuration = remainingSpinDuration;
                     stopType = SlotColumn.StopType.Fast;
                 }
-
+                
                 var task = _slotColumns[i].Spin(targetSpinDuration, resultingCombination, stopType);
                 tasks.Add(task);
                 await UniTask.Delay(TimeSpan.FromSeconds(GameConfig.DelayBetweenColumnSpins));
@@ -134,8 +128,7 @@ namespace Gameplay.SlotModule.Controller
 
         private void ValidateSpinData()
         {
-            if (_userData.LastSpinIndex <= 99 && _userData.SpinData[_userData.LastSpinIndex].SlotObjects.Length ==
-                _probabilityConfig.Probabilities[0].combination.SlotObjects.Length) return;
+            if (_userData.LastSpinIndex <= 99) return;
 
             _probabilityController.GenerateSpinData();
             _userData.LastSpinIndex = 0;
